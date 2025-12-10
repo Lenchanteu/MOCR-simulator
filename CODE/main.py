@@ -3,7 +3,9 @@
 import cubesat
 import time
 
-
+class simulator():
+    def __init__(self, timestep):
+        self.timestep = timestep
 class MOCR():
     def __init__(self, simulator):
         self.sim = simulator
@@ -11,15 +13,15 @@ class MOCR():
     
     def update(self):
         self.sim.update()
-        self.cap_message = self.sim.message()
         self.check()
 
     def check(self):
-        if self.cap_message == "STOP":
+        if self.sim.status["sim"] == "STOP":
             Exception("Capsule has died")
         
-simulator = cubesat.CubeSat(0, 0, 0, 0)
-operation = MOCR(simulator)
+simulation = simulator(1)
+simulated = cubesat.CubeSat()
+operation = MOCR(simulated)
 while True:
     operation.update()
     time.sleep(0.5)
