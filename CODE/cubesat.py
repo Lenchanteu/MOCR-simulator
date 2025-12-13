@@ -1,22 +1,20 @@
 #To debug next time: check notes
 
 import random
-import main
+
 class CubeSat():
-    def __init__(self):
-        self.batt_level
-        self.internal_temp
-        self.orientation
-        self.comm_status
-        self.message
-        self.location
-        self.rotation
-        self.power
-        self.batt_efficiency
+    def __init__(self, timestep=1):
+        self.comm_status = "UNKNOWN"
+        self.message = "UNKNOWN"
+        self.batt_level = 100  # percentage
+        self.internal_temp = 25  # Celsius
+        self.orientation = "N"  # N, S, W, E
         self.status = {
             "comm": self.comm_status,
             "sim": self.message
         }
+        self.start_ok = False
+        self.timestep =timestep  # seconds
     
     def start(self):
         self.batt_level = random.randrange(70, 100)
@@ -29,8 +27,11 @@ class CubeSat():
         self.rotation = [0, 0, 0]
         self.power = 0
         self.batt_efficiency = 0.05
+        self.start_ok = True
 
     def update(self):
+        if self.start_ok != True:
+            raise Exception("Simulated object was not started, please verify the configuration.")
         #self.batt_level -= random.randrange(0, 10) /used for debug purposes
         #self.internal_temp += random.randrange(-10, 10) /same
         #self.comm_status = random.choice(["GOOD", "BAD"]) /same
@@ -53,7 +54,7 @@ class CubeSat():
             self.displacement_y = self.rotation[1]*self.power
             self.displacement_z = self.rotation[2]*self.power
 
-            cycles = time/main.simulation.timestep
+            self.move_cycles = time/self.timestep
     
     def mover(self):
         self.location[0] += self.displacement_x
@@ -61,4 +62,4 @@ class CubeSat():
         self.location[2] += self.displacement_z
 
         self.batt_level -= ((self.displacement_x + self.displacement_y + self.displacement_z) * self.batt_efficiency)
-            
+
