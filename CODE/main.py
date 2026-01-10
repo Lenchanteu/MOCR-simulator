@@ -3,8 +3,12 @@ import MOCR
 import time
 import threading
 import json
+import sys
+import subprocess
+import pathlib
 
-with open('SIM_FILES/launch_config.json', 'r') as launch_config_file:
+User_Home_Path = str(pathlib.Path.home())
+with open(f'{User_Home_Path}\\MOCRSim\\launch_config.json', 'r') as launch_config_file:
     launch_config = json.load(launch_config_file)
 
 class simulator():
@@ -21,8 +25,20 @@ class simulator():
 
     def start(self):
         #Initializes every variables when the actual program starts
-        self.simulated.start()
-        self.update_thread.start()
+        print(f"Welcome {launch_config['username']} to the MOCR simulator! \n Please take this time to verifiy your launch configuration: \n simulated object is {launch_config['simulated']} \n you are starting a {'single' if launch_config['single_multi']==True else 'multi'}player session \n {'You are runnning a debug session \n' if launch_config['debug']==True else ''}")
+        go_ahead = str.lower(input("Please confirm that the info above are correct: True/False: "))
+        if go_ahead == "true":
+            go_ahead = True
+        else:
+            go_ahead = False
+        if go_ahead != True:
+            print("Misconfigurations, going back to launch screen. Please wait...")
+            self.stop()
+            subprocess.run([sys.executable, "CODE/launch.py"])
+        else:
+            self.simulated.start()
+            self.update_thread.start()
+
 
 
     def update(self):
@@ -39,7 +55,7 @@ class simulator():
         self.shutdown_event.set()
         self.update_thread.join()
         print("Simulation stopped.")
-print(f"Welcome {launch_config['username']} to the MOCR simulator! \n Please take this time to verifiy your launch configuration: \n simulated object is {launch_config['simulated']} \n you are starting a {'single' if launch_config['single_multi']==True else 'multi'}player session \n {'You are runnning a debug session \n' if launch_config['debug']==True else ''}")
+
 simulation = simulator(1) #initialize a simulator with a timestep of 1 second (This delay is for debug purposes only. Real loop will probably be 0.01 sec or less)
 simulation.start() 
 time.sleep(30)  # placeholder for GUI exit button
