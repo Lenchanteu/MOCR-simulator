@@ -1,4 +1,3 @@
-import cubesat
 import MOCR
 import time
 import threading
@@ -6,7 +5,8 @@ import json
 import sys
 import subprocess
 import pathlib
-
+#Message: Cubesat is not importable anymore, please load all values from Json file titled: cubesat_values.json. Thanks.
+#All communication with the cubesat simulation should be done trough a json file titled :communication.json under according com title
 User_Home_Path = str(pathlib.Path.home())
 with open(f'{User_Home_Path}\\MOCRSim\\launch_config.json', 'r') as launch_config_file:
     launch_config = json.load(launch_config_file)
@@ -16,11 +16,11 @@ class simulator():
         self.timestep = timestep
         self.shutdown_event = threading.Event()
         self.update_thread = threading.Thread(target=self.update)
-        if launch_config["simulated"] == "cubesat":
-            self.simulated = cubesat.CubeSat(self.timestep)
-        else:
-            raise Exception("Only the cubesat simulation is currently implemented")
-        self.MOCR = MOCR.MOCR(self.simulated, self.shutdown_event)
+        #if launch_config["simulated"] == "cubesat":
+        #    self.simulated = cubesat.CubeSat(self.timestep)
+        #else:
+        #    raise Exception("Only the cubesat simulation is currently implemented")
+        #self.MOCR = MOCR.MOCR(self.simulated, self.shutdown_event)
 
 
     def start(self):
@@ -36,16 +36,16 @@ class simulator():
             self.stop()
             subprocess.run([sys.executable, "CODE/launch.py"])
         else:
-            self.simulated.start()
+            #self.simulated.start()
             self.update_thread.start()
 
 
 
     def update(self):
         while not self.shutdown_event.is_set(): #while not shutingdown
-            self.simulated.update() 
-            self.MOCR.update()
-            print(self.simulated.debugMessage()) #Debug purposes only
+            #self.simulated.update() 
+            #self.MOCR.update()
+            #print(self.simulated.debugMessage()) #Debug purposes only
             self.shutdown_event.wait(self.timestep)
 
         print("Update thread exiting cleanly.") #Hoppefully :)

@@ -62,4 +62,5 @@ else:
 
 #Launches the main program, must be at the end of the file
 subprocess.run([sys.executable, "CODE/main.py"])
+subprocess.run([sys.executable, "CODE/cubesat.py"])
 quit()

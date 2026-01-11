@@ -4,7 +4,7 @@ batt_level = max(0, 100) #battery level range in %
 def __checker(batt_level):
     if batt_level>100:
         batt_level=100 
-        print(Warning("Battery level exceeded 100%, resetting to 100%"))
+        print(SystemError("Battery level exceeded 100%, resetting to 100%"))
 def locationUpdater(rotation, power, time, batt_level, timestep, location, batt_efficiency): #time should be in second, rotation in degrees, power in percent
     __checker(batt_level)
     if batt_level >= 10: #minimum battery level to perform any movement
