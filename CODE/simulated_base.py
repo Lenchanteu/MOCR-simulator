@@ -1,5 +1,5 @@
 #base library for every simulated object
-
+import json
 batt_level = max(0, 100) #battery level range in %
 def __checker(batt_level):
     if batt_level>100:
@@ -36,7 +36,6 @@ def __mover(location, move_cycles, displacement_x, displacement_y, displacement_
         location[0] += displacement_x
         location[1] += displacement_y
         location[2] += displacement_z
-        print(location)
 
     displacement_x = abs(displacement_x)
     displacement_y = abs(displacement_y)
@@ -45,3 +44,55 @@ def __mover(location, move_cycles, displacement_x, displacement_y, displacement_
     batt_level -= batt_cost
     print(batt_level)
     return batt_level, location
+
+def receiveCommand():
+        try:
+            with open('JSON/commands.json', 'w') as command_file:
+                data = json.load(command_file)
+                command = data.get("command", "0")
+                if command != "0":
+                    json.dump({"command": {
+                        None
+                    }}, command_file)
+                    return command
+        except Exception as e:
+            try:
+                with open('JSON/commands.json', 'x') as command_file:
+                    data = json.load(command_file)
+                    command = data.get("command", "0")
+                    if command != "0":
+                        json.dump({"command": {
+                            None
+                        }}, command_file)
+                        return command
+            except Exception as e:
+                print(Exception(f"{e} :No command file detected, please verify the state of commands.json"))
+
+def sendData(batt_level, internal_temp, rotation, location, comm_status, message):
+        data = {
+            "batt_level": batt_level,
+            "internal_temp": internal_temp,
+            "rotation": rotation,
+            "location": location,
+            "comm_status": comm_status,
+            "message": message,
+        }
+        try:
+            with open('JSON/communication.json', 'w',) as comm_file:
+                json.dump(data, comm_file)
+        except Exception as e:
+            try:
+                with open('JSON/communication.json', 'x') as comm_file:
+                    json.dump(data, comm_file)
+            except:
+                print(Warning(f"{e} :No communication line: the simulated object will not be able to communicate. Verify that communication.json is not opened in another program."))
+
+def receiveData():
+        try:
+            with open('JSON/communication.json', 'r') as comm_file:
+                data = json.load(comm_file)
+                sim_state = data.get("sim_state", 0)
+                timestep = data.get("timestep", 0.1)
+                return sim_state, timestep
+        except Exception as e:
+            print(Exception(f"{e} :No communication file detected, please verify the state of communication.json"))
