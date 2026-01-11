@@ -2,6 +2,7 @@
 #connected to main.py by import
 
 import random
+import simulated_base
 
 class CubeSat():
     def __init__(self, timestep=1):
@@ -30,7 +31,6 @@ class CubeSat():
         self.location = [0, 0, 0]
         self.rotation = [0, 0, 0]
         #Must be 0 at start
-        self.power = 0
         self.batt_efficiency = 0.05 #to replace by actual values in NASA/ESA documentation
         #Must be kept here at the end, indicates proper initialization
         self.start_ok = True
@@ -54,22 +54,9 @@ class CubeSat():
     def debugMessage(self):
         return self.message
     
-
-    def locationUpdater(self, rotation, power, time): #time should be in second, rotation in degrees, power in percent
-        if self.batt_level >= 10: #minimum battery level to perform any movement
-            self.rotation += rotation #updates rotation based on input
-            self.power=power
-            #Calculate displacement on each axis
-            self.displacement_x = self.rotation[0]*self.power
-            self.displacement_y = self.rotation[1]*self.power
-            self.displacement_z = self.rotation[2]*self.power
-            #calculate number of cycles to perform based on inputed time and main timestep
-            self.move_cycles = time/self.timestep
+    def move(self, rotation, power, duration):
+        self.rotation += rotation
+        self.batt_level, self.location = simulated_base.locationUpdater(self.rotation, power, duration, self.batt_level, self.timestep, self.location, self.batt_efficiency)
+        
     
-    def mover(self): #actual movement function
-        self.location[0] += self.displacement_x
-        self.location[1] += self.displacement_y
-        self.location[2] += self.displacement_z
-
-        self.batt_level -= ((self.displacement_x + self.displacement_y + self.displacement_z) * self.batt_efficiency) #not shure about this formula, to be checked with documentation
 
