@@ -1,5 +1,12 @@
 #base library for every simulated object
 import json
+from pathlib import Path
+from functools import partial
+
+BASE_DIR = Path(__file__).resolve().parent
+COMM_MAIN_PATH = BASE_DIR / 'JSON' / 'communicationFromMain.json'
+COMM_CUBESAT_PATH = BASE_DIR / 'JSON' / 'communicationFromCubesat.json'
+COMMANDS_PATH = BASE_DIR / 'JSON' / 'commands.json'
 batt_level = max(0, 100) #battery level range in %
 def __checker(batt_level):
     if batt_level>100:
@@ -20,10 +27,7 @@ def locationUpdater(rotation, power, time, batt_level, timestep, location, batt_
         return batt_level, location
     else:  
         print("Battery too low for movement")
-        return batt_level, location
-
-
-    
+        return batt_level, location   
 def __mover(location, move_cycles, displacement_x, displacement_y, displacement_z, batt_level, batt_efficiency): #actual movement function
     __checker(batt_level)
     batt_cost = ((abs(displacement_x) + abs(displacement_y) + abs(displacement_z)) * batt_efficiency * move_cycles)
@@ -47,27 +51,27 @@ def __mover(location, move_cycles, displacement_x, displacement_y, displacement_
 
 def receiveCommand():
         try:
-            with open('JSON/commands.json', 'w') as command_file:
+            with open(COMMANDS_PATH, 'r') as command_file:
                 data = json.load(command_file)
-                command = data.get("command", "0")
-                if command != "0":
-                    json.dump({"command": {
-                        None
-                    }}, command_file)
-                    return command
-        except Exception as e:
-            try:
-                with open('JSON/commands.json', 'x') as command_file:
-                    data = json.load(command_file)
-                    command = data.get("command", "0")
-                    if command != "0":
-                        json.dump({"command": {
-                            None
-                        }}, command_file)
-                        return command
-            except Exception as e:
-                print(Exception(f"{e} :No command file detected, please verify the state of commands.json"))
+                if data == {"command": {"args": [], "name": "None"}}:
+                    return None, None
+                command = data.get("command", {"args": [], "name": "NONE"})
+                args = command.get("args", [])
+                command_name = command.get("name", "NONE")
+                if command != "NONE":
+                    with open(COMMANDS_PATH, 'w') as command_file:
+                        json.dump({"command": {"args": [], "name": "NONE"}}, command_file)
+                    return command_name, args
+                else:
+                    return None, None
+        except FileNotFoundError:
+            print(Exception("No command file detected: please verify that commands.json exists in the JSON folder"))
+        
+        except json.decoder.JSONDecodeError:
+            print(Exception("Commands file is corrupted: please delte it and run the program again."))
 
+def noop():
+    pass
 def sendData(batt_level, internal_temp, rotation, location, comm_status, message):
         data = {
             "batt_level": batt_level,
@@ -78,21 +82,40 @@ def sendData(batt_level, internal_temp, rotation, location, comm_status, message
             "message": message,
         }
         try:
-            with open('JSON/communication.json', 'w',) as comm_file:
+            with open(COMM_CUBESAT_PATH, 'w',) as comm_file:
                 json.dump(data, comm_file)
         except Exception as e:
             try:
-                with open('JSON/communication.json', 'x') as comm_file:
+                with open(COMM_CUBESAT_PATH, 'x') as comm_file:
                     json.dump(data, comm_file)
             except:
                 print(Warning(f"{e} :No communication line: the simulated object will not be able to communicate. Verify that communication.json is not opened in another program."))
 
 def receiveData():
         try:
-            with open('JSON/communication.json', 'r') as comm_file:
+            with open(COMM_MAIN_PATH, 'r') as comm_file:
                 data = json.load(comm_file)
                 sim_state = data.get("sim_state", 0)
                 timestep = data.get("timestep", 0.1)
                 return sim_state, timestep
         except Exception as e:
             print(Exception(f"{e} :No communication file detected, please verify the state of communication.json"))
+
+def dispatchCommands(command_table, command_name, json_args, self):
+    if command_name not in command_table:
+        raise ValueError(f"Command {command_name} not found in command table.")
+    
+    entry = command_table[command_name]
+    func = entry["name"]
+    arg_names = entry["args"]
+
+    resolved_args = []
+
+    for arg in arg_names:
+        if arg in json_args:
+            resolved_args.append(json_args[arg])
+        elif hasattr(self, arg):
+            resolved_args.append(getattr(self, arg))
+        else:
+            raise ValueError(f"Missing some argument: {arg} ")
+    return partial(func, *resolved_args)

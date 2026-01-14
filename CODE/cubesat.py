@@ -3,22 +3,37 @@
 
 import random
 from time import sleep
+
+from numpy import long
 import simulated_base
 import json
 import sys
 
+
 class CubeSat():
     def __init__(self, timestep=1, batt_level=100, internal_temp=25, rotation=[0,0,0], location=[0,0,0]):
+        self.COMMAND_TABLE = {
+                "MOVE": {"name": self.move,
+                        "args": 
+                        ["rotation",
+                        "power", 
+                        "duration",]
+                        }, 
+                "DEBUG": 
+                {"name": self.debugMessage, 
+                "args": []},
+                "NONE":
+                {"name": simulated_base.noop,
+                "args": []}
+                        }
+        
         # Currently "random" initial values for testing purposes
         self.batt_level = batt_level  # percentage
         self.internal_temp = internal_temp  # Celsius
         self.rotation = rotation
         self.location = location
-        
-        self.status = {
-            "comm": self.comm_status,
-            "sim": self.message
-        }
+        self.comm_status = 0
+        self.message = 0
         self.start_ok = False
         self.timestep = timestep  # in seconds
     
@@ -33,6 +48,7 @@ class CubeSat():
         self.rotation = [0, 0, 0]
         self.batt_efficiency = 0.05 #to replace by actual values in NASA/ESA documentation
         #Must be kept here at the end, indicates proper initialization
+        self.cycle = long(0)
         self.start_ok = True
 
 
@@ -40,10 +56,13 @@ class CubeSat():
         #self.batt_level -= random.randrange(0, 10) ,used for debug purposes
         #self.internal_temp += random.randrange(-10, 10) ,same
         #self.comm_status = random.choice(["GOOD", "BAD"]) ,same
-        self.sim_state, self.timestep = simulated_base.receiveData() # type: ignore #need to find a way to only have sim_state
-        self.command = simulated_base.receiveCommand()
+        self.sim_state, self.timestep = simulated_base.receiveData()  #type: ignore need to find a way to only have sim_state
+        self.command, self.args = simulated_base.receiveCommand() # type: ignore
+        self.executeCommand()
         simulated_base.sendData(self.batt_level, self.internal_temp, self.rotation, self.location, self.comm_status, self.message)
         self.checkSystem()
+        self.cycle += 1
+
         
     def checkSystem(self):
         if self.batt_level <= 0:
@@ -52,14 +71,27 @@ class CubeSat():
         if self.sim_state == 0:
             self.__stop()
 
-        self.status["comm"] = self.comm_status
-        self.status["sim"] = self.message
+    
+    def executeCommand(self):
+         command = simulated_base.dispatchCommands(self.COMMAND_TABLE, self.command, self.args, self)
+         if command == None:
+             return
+         if command: 
+             command()
+         
+
+        
+    def noneFunction(self):
+        return
+
 
     def debugMessage(self):
         return self.message
     
     def move(self, rotation, power, duration):
-        self.rotation += rotation
+        self.rotation[0] += rotation[0]
+        self.rotation[1] += rotation[1]
+        self.rotation[2] += rotation[2]
         self.batt_level, self.location = simulated_base.locationUpdater(self.rotation, power, duration, self.batt_level, self.timestep, self.location, self.batt_efficiency)
     
     
@@ -72,6 +104,7 @@ class CubeSat():
         sys.exit(0)
 
 cubesat = CubeSat()
+cubesat.start()
 while True:
     cubesat.update()
     sleep(cubesat.timestep)
