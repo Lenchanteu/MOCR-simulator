@@ -3,10 +3,22 @@ import json
 from pathlib import Path
 from functools import partial
 
+
+
 BASE_DIR = Path(__file__).resolve().parent
 COMM_MAIN_PATH = BASE_DIR / 'JSON' / 'communicationFromMain.json'
 COMM_CUBESAT_PATH = BASE_DIR / 'JSON' / 'communicationFromCubesat.json'
 COMMANDS_PATH = BASE_DIR / 'JSON' / 'commands.json'
+USER_HOME_DIR = Path.home() / 'MOCRSim'
+LAUNCH_CONFIG_PATH = USER_HOME_DIR / 'launch_config.json'
+SAVE_FILE_PATH = USER_HOME_DIR / 'save_file.json'
+COMMAND_STACK_PATH = BASE_DIR / 'JSON' / 'commandStack.json'
+#with open(SAVE_FILE_PATH, 'r') as save_file:
+#    save = json.load(save_file)
+#    iteration_number = save["iteration_number"]
+LOG_FILE_PATH = USER_HOME_DIR / 'log.json' #add  f''{iteration_number}''
+STOP_COMMAND = False
+
 batt_level = max(0, 100) #battery level range in %
 def __checker(batt_level):
     if batt_level>100:
@@ -32,7 +44,7 @@ def __mover(location, move_cycles, displacement_x, displacement_y, displacement_
     __checker(batt_level)
     batt_cost = ((abs(displacement_x) + abs(displacement_y) + abs(displacement_z)) * batt_efficiency * move_cycles)
     if batt_level < batt_cost:
-        move_cycles = int(batt_level // ((displacement_x + displacement_y + displacement_z) * batt_efficiency))
+        move_cycles = abs(int(batt_level // ((displacement_x + displacement_y + displacement_z) * batt_efficiency)))
         batt_cost = ((displacement_x + displacement_y + displacement_z) * batt_efficiency * move_cycles)
         print("Battery low, adjusting movement cycles to:", move_cycles)
 
@@ -119,3 +131,18 @@ def dispatchCommands(command_table, command_name, json_args, self):
         else:
             raise ValueError(f"Missing some argument: {arg} ")
     return partial(func, *resolved_args)
+
+def verify_integrity_launch(): #MUST be executed before anything in EVERY file.
+    with open(LAUNCH_CONFIG_PATH, 'r') as launch_config_file:
+        launch_config = json.load(launch_config_file)
+        if launch_config.get("integrity_checks") != "passed":
+            raise Exception("Launch config file integrity checks failed. Closing program to prevent file corruption")
+
+def new_log():
+    with open(SAVE_FILE_PATH, 'r') as save_file:
+        save = json.load(save_file)
+        iteration_number = save["log_iteration"]
+    iteration_number += 1
+    LOG_FILE_PATH = USER_HOME_DIR / f"log{iteration_number}.json"
+    with open(LOG_FILE_PATH, 'x'):
+        pass

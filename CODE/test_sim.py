@@ -1,27 +1,19 @@
 import simulated_base
+import subprocess
+import sys
+import json
+import threading
+subprocess.run([sys.executable, 'CODE/integrity_holder.py'])
+subprocess.run([sys.executable, 'CODE/cubesat.py'])
 
-location = [0,0,0]
-batt_level = 100
-while True:
-    x = input()
-    if x == "exit":
-        break
-    if x == "w":
-        batt_level, location = simulated_base.locationUpdater([1,0,0], 5, 10, batt_level, 1, location, 0.01)
-        print(batt_level, location)
-    if x == "s":
-        batt_level, location = simulated_base.locationUpdater([-1,0,0], 5, 10, batt_level, 1, location, 0.01)
-        print(batt_level, location)
-    if x == "a":
-        batt_level, location = simulated_base.locationUpdater([0,1,0], 5, 10, batt_level, 1, location, 0.01)
-        print(batt_level, location)
-    if x == "d":
-        batt_level, location = simulated_base.locationUpdater([0,-1,0], 5, 10, batt_level, 1, location, 0.01)
-        print(batt_level, location)
-    if x == "q":
-        batt_level, location = simulated_base.locationUpdater([0,0,1], 5, 10, batt_level, 1, location, 0.01)
-        print(batt_level, location)
-    if x == "e":
-        batt_level, location = simulated_base.locationUpdater([0,0,-1], 5, 10, batt_level, 1, location, 0.01)
-        print(batt_level, location)
-quit()
+def function():
+    while True:
+        user_input = input("")
+        user_input = str.lower(user_input)
+        if user_input == "stop":
+            with open(simulated_base.COMMAND_STACK_PATH, 'a') as command_stack_file:
+                dumper = {"command": {"args": [], "name": "STOP"}}
+                json.dump(dumper, command_stack_file)
+
+new_thread = threading.Thread(target=function)
+new_thread.start()

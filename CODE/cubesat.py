@@ -1,11 +1,10 @@
 ## CODE/cubesat.py
 #connected to main.py by import
-
-import random
-from time import sleep
-
-from numpy import long
 import simulated_base
+simulated_base.verify_integrity_launch() #MAY NOT BE REMOVED. MUST BE CALLED. Prevention of corruption in the program.
+import random
+import time
+import threading
 import json
 import sys
 
@@ -24,7 +23,10 @@ class CubeSat():
                 "args": []},
                 "NONE":
                 {"name": simulated_base.noop,
-                "args": []}
+                "args": []},
+                "STOP": 
+                {"name": self.__stop, 
+                 "args": []}
                         }
         
         # Currently "random" initial values for testing purposes
@@ -36,6 +38,8 @@ class CubeSat():
         self.message = 0
         self.start_ok = False
         self.timestep = timestep  # in seconds
+        self.log_filling_thread = threading.Thread(target=self.logfiling)
+        self.stop_signal = False
     
     def start(self):
         #Initializes variables when called, variables are randomized for testing purposes
@@ -48,7 +52,9 @@ class CubeSat():
         self.rotation = [0, 0, 0]
         self.batt_efficiency = 0.05 #to replace by actual values in NASA/ESA documentation
         #Must be kept here at the end, indicates proper initialization
-        self.cycle = long(0)
+        self.cycle = 0
+
+        self.log_filling_thread.start()
         self.start_ok = True
 
 
@@ -63,7 +69,9 @@ class CubeSat():
         self.checkSystem()
         self.cycle += 1
 
-        
+    def __stop(self):
+        simulated_base.STOP_COMMAND = True
+        self.log_filling_thread.join()
     def checkSystem(self):
         if self.batt_level <= 0:
             self.comm_status = "BAD"
@@ -78,33 +86,38 @@ class CubeSat():
              return
          if command: 
              command()
-         
-
-        
-    def noneFunction(self):
-        return
 
 
     def debugMessage(self):
-        return self.message
+        return self.batt_level,self.internal_temp,self.rotation,self.location,self.comm_status,self.message,self.timestep, self.cycle
     
     def move(self, rotation, power, duration):
         self.rotation[0] += rotation[0]
         self.rotation[1] += rotation[1]
         self.rotation[2] += rotation[2]
         self.batt_level, self.location = simulated_base.locationUpdater(self.rotation, power, duration, self.batt_level, self.timestep, self.location, self.batt_efficiency)
-    
-    
-    
-  
-    
-
-    
-    def __stop(self):
-        sys.exit(0)
+    def logfiling(self):
+        while not simulated_base.STOP_COMMAND:
+            
+            with open(simulated_base.LOG_FILE_PATH, 'a') as log_file:
+                json_data = {
+                    "time": time.time(),
+                    "batt_level": self.batt_level,
+                    "internal_temp": self.internal_temp,
+                    "rotation": self.rotation,
+                    "location": self.location,
+                    "comm_status": self.comm_status,
+                    "message": self.message,
+                    "timestep": self.timestep,
+                    "cycle": self.cycle,
+                }
+                json.dump(json_data, log_file)
+            time.sleep(10 * self.timestep)
 
 cubesat = CubeSat()
 cubesat.start()
-while True:
+next_tick = time.time()
+while not simulated_base.STOP_COMMAND:
     cubesat.update()
-    sleep(cubesat.timestep)
+    next_tick += cubesat.timestep
+    time.sleep(max(0, next_tick - time.time()))
