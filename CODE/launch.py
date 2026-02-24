@@ -4,7 +4,7 @@ import subprocess
 import sys
 import json
 import pathlib
-import simulated_base
+import base
 
 '''simulated object
 username
@@ -14,7 +14,7 @@ Old game: if true -> file, takes json input and parse it into special json
 
 '''
 
-pathlib.Path(simulated_base.USER_HOME_DIR).mkdir(parents=True, exist_ok=True)
+pathlib.Path(base.USER_HOME_DIR).mkdir(parents=True, exist_ok=True)
 OldGamebool = str.lower(input("Old game loading: true/false"))
 debug = False
 if OldGamebool == "true":
@@ -23,7 +23,7 @@ else:
     OldGamebool = False
 if OldGamebool == True:
     OldGameFile = json.load(open(input("Enter the file path of the save in .json: ")))
-    with open(simulated_base.LAUNCH_CONFIG_PATH, 'w') as launch_config_file:
+    with open(base.LAUNCH_CONFIG_PATH, 'w') as launch_config_file:
         json.dump(OldGameFile, launch_config_file)
 else:
     simulated = "cubesat" #str.lower(input("Debug mode: simulated object: choice = cubesat: ")) used later when more simulations are developed
@@ -58,7 +58,7 @@ else:
         "debug": debug
     }
 
-    with open(simulated_base.LAUNCH_CONFIG_PATH, 'w') as launch_config_file:
+    with open(base.LAUNCH_CONFIG_PATH, 'w') as launch_config_file:
         json.dump(launch_config, launch_config_file)
 
 #Launches the main program, must be at the end of the file

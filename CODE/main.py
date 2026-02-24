@@ -1,6 +1,6 @@
 from os import path
-import simulated_base
-simulated_base.verify_integrity_launch() #MAY NOT BE REMOVED. MUST BE CALLED. Prevention of corruption in the program.
+import base
+base.verify_integrity_launch() #MAY NOT BE REMOVED. MUST BE CALLED. Prevention of corruption in the program.
 import MOCR
 import time
 import threading
@@ -8,12 +8,12 @@ import json
 import sys
 import subprocess
 import pathlib
-import simulated_base
+import CODE.base as base
 #Message: Cubesat is not importable anymore, please load all values from Json file titled: cubesat_values.json. Thanks.
 #All communication with the cubesat simulation should be done trough a json file titled :communication.json under according com title
 
 
-with open(simulated_base.LAUNCH_CONFIG_PATH, 'r') as launch_config_file:
+with open(base.LAUNCH_CONFIG_PATH, 'r') as launch_config_file:
     launch_config = json.load(launch_config_file)
 
 class simulator():
@@ -46,18 +46,20 @@ class simulator():
 
 
     def update(self):
-        while not simulated_base.STOP_COMMAND: #while not shuting down
-            pass
-            input("command: MOVE: ")
+        while not base.STOP_COMMAND: #while not shuting down
+            self.get_input()
 
         print("Update thread exiting cleanly.") #Hoppefully :)
         exit()
 
     def stop(self):
         print("Shutdown requested.")
-        simulated_base.STOP_COMMAND = True
+        base.STOP_COMMAND = True
         self.update_thread.join()
         print("Simulation stopped.")
+    
+    def get_input(self):
+        pass
 
 simulation = simulator(1) #initialize a simulator with a timestep of 1 second (This delay is for debug purposes only. Real loop will probably be 0.01 sec or less)
 simulation.start() 

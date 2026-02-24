@@ -1,11 +1,10 @@
 ## CODE/cubesat.py
 #connected to main.py by import
-import simulated_base
-simulated_base.verify_integrity_launch() #MAY NOT BE REMOVED. MUST BE CALLED. Prevention of corruption in the program.
+import base
+base.verify_integrity_launch() #MAY NOT BE REMOVED. MUST BE CALLED. Prevention of corruption in the program.
 import random
 import time
 import threading
-import json
 import sys
 
 
@@ -22,7 +21,7 @@ class CubeSat():
                 {"name": self.debugMessage, 
                 "args": []},
                 "NONE":
-                {"name": simulated_base.noop,
+                {"name": base.noop,
                 "args": []},
                 "STOP": 
                 {"name": self.__stop, 
@@ -38,7 +37,7 @@ class CubeSat():
         self.message = 0
         self.start_ok = False
         self.timestep = timestep  # in seconds
-        self.log_filling_thread = threading.Thread(target=self.logfiling)
+        self.log_filling_thread = threading.Thread(target=self.logfiling, daemon=True)
         self.stop_signal = False
     
     def start(self):
@@ -62,15 +61,17 @@ class CubeSat():
         #self.batt_level -= random.randrange(0, 10) ,used for debug purposes
         #self.internal_temp += random.randrange(-10, 10) ,same
         #self.comm_status = random.choice(["GOOD", "BAD"]) ,same
-        self.sim_state, self.timestep = simulated_base.receiveData()  #type: ignore need to find a way to only have sim_state
-        self.command, self.args = simulated_base.receiveCommand() # type: ignore
+        self.sim_state, self.timestep = base.receiveData()
+        self.command = base.command['command']['name']
+        self.args = base.command['command']['args']
         self.executeCommand()
-        simulated_base.sendData(self.batt_level, self.internal_temp, self.rotation, self.location, self.comm_status, self.message)
+        self.message = base.sim_message
+        base.sendData(self.batt_level, self.internal_temp, self.rotation, self.location, self.comm_status, self.message)
         self.checkSystem()
         self.cycle += 1
 
     def __stop(self):
-        simulated_base.STOP_COMMAND = True
+        base.STOP_COMMAND = True
         self.log_filling_thread.join()
     def checkSystem(self):
         if self.batt_level <= 0:
@@ -81,10 +82,10 @@ class CubeSat():
 
     
     def executeCommand(self):
-         command = simulated_base.dispatchCommands(self.COMMAND_TABLE, self.command, self.args, self)
+         command = base.dispatchCommands(self.COMMAND_TABLE, self.command, self.args, self)
          if command == None:
              return
-         if command: 
+         else: 
              command()
 
 
@@ -95,12 +96,11 @@ class CubeSat():
         self.rotation[0] += rotation[0]
         self.rotation[1] += rotation[1]
         self.rotation[2] += rotation[2]
-        self.batt_level, self.location = simulated_base.locationUpdater(self.rotation, power, duration, self.batt_level, self.timestep, self.location, self.batt_efficiency)
+        self.batt_level, self.location = base.locationUpdater(self.rotation, power, duration, self.batt_level, self.timestep, self.location, self.batt_efficiency)
     def logfiling(self):
-        while not simulated_base.STOP_COMMAND:
-            
-            with open(simulated_base.LOG_FILE_PATH, 'a') as log_file:
-                json_data = {
+        while not base.STOP_COMMAND: 
+            with open(base.LOG_FILE_PATH, 'a') as log_file:
+                data = {
                     "time": time.time(),
                     "batt_level": self.batt_level,
                     "internal_temp": self.internal_temp,
@@ -111,13 +111,16 @@ class CubeSat():
                     "timestep": self.timestep,
                     "cycle": self.cycle,
                 }
-                json.dump(json_data, log_file)
+                log_file.write(str(data))
             time.sleep(10 * self.timestep)
 
 cubesat = CubeSat()
 cubesat.start()
-next_tick = time.time()
-while not simulated_base.STOP_COMMAND:
-    cubesat.update()
-    next_tick += cubesat.timestep
-    time.sleep(max(0, next_tick - time.time()))
+def runtime_cubesat():
+    next_tick = time.time()
+    while not base.STOP_COMMAND:
+        cubesat.update()
+        next_tick += cubesat.timestep
+        time.sleep(max(0, next_tick - time.time()))
+cubesat_thread = threading.Thread(target=runtime_cubesat, daemon=True)
+cubesat_thread.start()
