@@ -28,19 +28,7 @@ with open(base.LAUNCH_CONFIG_PATH, 'w') as launch_config_file:
     }
     json.dump(json_go, launch_config_file)
 
-def command_manager():
-    while not base.STOP_COMMAND:
-        command_state = "undefined"
-        if base.command == {"command": {"args": [], "name": "NONE"}}:
-            command_state = "cleared"
-        else:
-           command_state = "busy"
-        if command_state == "cleared":
-            base.command_stack
-            if base.command_stack.empty():
-                continue
-            base.command = base.command_stack.get()
 
-command_manager_thread = threading.Thread(target=command_manager, daemon=True)
-command_manager_thread.start()
+
+
 

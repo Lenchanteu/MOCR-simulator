@@ -1,12 +1,33 @@
+import random
 import socket
+import string
 import struct
 import time
+from tokenize import String
 import zlib
+import base
 
 HOST = 'localhost'
 PORT = 8841
 packet_format = '>B4sBBIdHI102sB'
-
+server_key = hex(random.randint(0, 255))
+COMMAND_TABLE = {
+                "MOVE": {"name": "move",
+                        "args": 
+                        ["rotation",
+                        "power", 
+                        "duration",]
+                        }, 
+                "DEBUG": 
+                {"name": "debugMessage", 
+                "args": []},
+                "NONE":
+                {"name": base.noop,
+                "args": []},
+                "STOP": 
+                {"name": "__stop", 
+                 "args": []}
+                        }
 def split_IP(ip):
     a = ip.split('.')
     b = hex(a[0])
@@ -31,6 +52,7 @@ def first_transmission(sock):
     sending_time = time.time()
     checksum = zlib.crc32(struct.pack('>B4sBBIdH102sB', hello, name, computer_type, computer_number, packet_number, sending_time, info_type, message, closing))
     transmission = struct.pack(packet_format, hello, name, computer_type, computer_number, packet_number, sending_time, info_type, checksum, message, closing)
+
     sock.send(transmission)
 def recv_exact(sock, size):
     buffer = b''
@@ -40,8 +62,10 @@ def recv_exact(sock, size):
             raise ConnectionError("Connection closed")
         buffer += chunk
     return buffer
-
-def read_MRSTP_packet(data):
+def hello_message(sock, message):
+    if message == 0xA1:
+        first_transmission(sock)
+def read_MRSTP_packet(data, sock):
     packet_state = "good"
     network_latency = "good"
     unpack_data = struct.unpack(packet_format, data)
@@ -76,10 +100,25 @@ def read_MRSTP_packet(data):
     if checksum != zlib.crc32(check_data):
         print(Warning("The packet was corrupted. Discarding. Reason: the checksums did not match."))
         packet_state = "wrong"
-    if time.time() > time_of_send + 2:
+    if time.time() >= time_of_send + 0.5:
         print(Warning("Network is congested, slowing down the packet transmission."))
         network_latency = "bad"
     
+    if packet_state == "wrong":
+        return print(Warning("Discarding packet"))
+    #dispatch
+    if info_type == 0x01: #hello transmission
+        hello_message(sock, message)
+    elif info_type == 0x02: #command transmission
+        pass
+    elif info_type == 0x03: #server changes
+        pass
+def command_reader(message):
+    string_message = str(message)
+    n = 8
+    for i in range(0, len(string_message), n): 
+        print(String[i:i+n])
+
 
 
 

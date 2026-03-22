@@ -14,5 +14,6 @@ while base.STOP_COMMAND == False:
         base.command_stack.put({"command":  {"args": [[1,1,1],10,10], "name": "MOVE"}})
     print(base.simulated_comm)
 base.save_file(base.sim_batt_level, base.sim_internal_temp, base. sim_rotation, base.sim_location, base.sim_comm_status, base.sim_message)
-
+command_manager_thread = threading.Thread(target=base.command_manager, daemon=True)
+command_manager_thread.start()
 

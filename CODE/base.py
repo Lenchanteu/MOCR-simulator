@@ -157,6 +157,16 @@ def save_file(batt_level, internal_temp, rotation, location, comm_status, messag
             "iteration_number": str(int(iteration_number) + 1)
         }
         json.dump(save, save_file)
-
+def command_manager():
+    while not STOP_COMMAND:
+        command_state = "undefined"
+        if command == {"command": {"args": [], "name": "NONE"}}: # type: ignore
+            command_state = "cleared"
+        else:
+           command_state = "busy"
+        if command_state == "cleared":
+            if command_stack.empty():
+                continue
+            command = command_stack.get()
 def start_comm():
     pass #not implemented

@@ -8,7 +8,7 @@ import json
 import sys
 import subprocess
 import pathlib
-import CODE.base as base
+import base
 #Message: Cubesat is not importable anymore, please load all values from Json file titled: cubesat_values.json. Thanks.
 #All communication with the cubesat simulation should be done trough a json file titled :communication.json under according com title
 
@@ -60,7 +60,8 @@ class simulator():
     
     def get_input(self):
         pass
-
+command_manager_thread = threading.Thread(target=base.command_manager, daemon=True)
+command_manager_thread.start()
 simulation = simulator(1) #initialize a simulator with a timestep of 1 second (This delay is for debug purposes only. Real loop will probably be 0.01 sec or less)
 simulation.start() 
 time.sleep(5)  # placeholder for GUI exit button

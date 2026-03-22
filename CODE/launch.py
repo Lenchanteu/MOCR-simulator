@@ -5,6 +5,8 @@ import sys
 import json
 import pathlib
 import base
+import moderngl
+import modergnl_window as mgl_w # pyright: ignore[reportMissingImports]
 
 '''simulated object
 username
@@ -17,6 +19,7 @@ Old game: if true -> file, takes json input and parse it into special json
 pathlib.Path(base.USER_HOME_DIR).mkdir(parents=True, exist_ok=True)
 OldGamebool = str.lower(input("Old game loading: true/false"))
 debug = False
+multi = False
 if OldGamebool == "true":
     OldGamebool = True
 else:
@@ -28,14 +31,14 @@ if OldGamebool == True:
 else:
     simulated = "cubesat" #str.lower(input("Debug mode: simulated object: choice = cubesat: ")) used later when more simulations are developed
     username = str(input("enter username: "))
-    while True: #Only in use while multiplayer is not implemented
-        single_multi = str.lower(input("Debug mode: single or multiplayer: choice = single, multi not implemented: "))
-        if single_multi == "single":
-            single_multi = True
-            break
-        else:
-            single_multi = False
-            raise Exception("Multiplayer not implemented") #Only in use while multiplayer is not implemented
+    
+    single_multi = str.lower(input("Debug mode: single or multiplayer: choice = single, multi. Warning: multiplayer is not fully implemented"))
+    if single_multi == "multi":
+        multi = True
+        raise Warning("Multiplayer not fully implemented") #Only in use while multiplayer is not fully implemented
+    else:
+        multi = False
+    
         
     debug = str.lower(input("Debug mode: True/False"))
     if debug == "true":
@@ -47,7 +50,7 @@ else:
         raise Exception("Only cubesat simulation is currently implemented")
     if debug not in [True, False]:
         raise Exception("Debug input must be True or False")
-    if single_multi not in [True, False]:
+    if multi not in [True, False]:
         raise Exception("Single/Multi input must be single or multi")
     #Saves configuration to a json file
     launch_config = {
@@ -63,8 +66,11 @@ else:
 
 #Launches the main program, must be at the end of the file
 subprocess.run([sys.executable, "CODE/integrity_holder.py"])
-if debug == True:
+
+if debug == True and multi == False:
     subprocess.run([sys.executable, "CODE/test_sim.py"])
+elif debug == False and multi == True:
+    subprocess.run([sys.executable, "CODE/launch_multi.py"])
 else:
     subprocess.run([sys.executable, "CODE/main.py"])
 quit()
